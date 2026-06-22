@@ -4,7 +4,10 @@ __pycache__/
 venv/
 .env
 *.db
+*.db-shm
+*.db-wal
 node_modules/
 dist/
 .DS_Store
 desktop/node_modules/
+penthouse_dream_deploy.zip

@@ -20,7 +20,7 @@ dp.include_router(inventory.router)
 
 
 async def process_update(data: dict) -> None:
-    update = Update.model_validate(data, context={"bot": bot})
+    update = Update.model_validate(data)
     await dp.feed_update(bot, update)
 
 

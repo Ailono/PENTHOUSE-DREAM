@@ -60,11 +60,7 @@ async def startup():
 
 @app.on_event("shutdown")
 async def shutdown():
-    from bot.webhook import delete_webhook, bot
-    try:
-        await delete_webhook()
-    except Exception:
-        pass
+    from bot.webhook import bot
     await bot.session.close()
     await engine.dispose()
     logger.info("Shutdown complete")

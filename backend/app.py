@@ -1,6 +1,8 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from database.models import Base
 from database.database import engine, get_db
@@ -112,9 +114,11 @@ async def notify_user(user_id: int, event: dict):
             active_connections.pop(user_id, None)
 
 
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
 @app.get("/")
 async def root():
-    return {"message": "Penthouse Dream API is running"}
+    return FileResponse("static/index.html")
 
 
 @app.get("/api/users/{user_id}")

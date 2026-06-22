@@ -140,20 +140,62 @@ async def create_new_user(user_id: int, username: str = None, db: AsyncSession =
 
 @app.get("/api/users/{user_id}/profile")
 async def read_profile(user_id: int, db: AsyncSession = Depends(get_db)):
+    profile = await crud.get_full_profile(db, user_id)
+    if not profile:
+        raise HTTPException(status_code=404, detail="User not found")
+    return profile
+
+
+@app.put("/api/users/{user_id}/profile")
+async def update_profile(
+    user_id: int,
+    username: str = None,
+    bio: str = None,
+    avatar_url: str = None,
+    db: AsyncSession = Depends(get_db),
+):
     user = await crud.get_user(db, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    inventory_count = len(user.inventory) if user.inventory else 0
-    achievements_count = len(user.achievements) if user.achievements else 0
-    return {
-        "user_id": user.user_id,
-        "username": user.username,
-        "balance": user.balance,
-        "room_level": user.room_level,
-        "happiness": user.happiness,
-        "inventory_count": inventory_count,
-        "achievements_count": achievements_count,
-    }
+    kwargs = {}
+    if username is not None:
+        kwargs["username"] = username
+    if bio is not None:
+        kwargs["bio"] = bio
+    if avatar_url is not None:
+        kwargs["avatar_url"] = avatar_url
+    updated = await crud.update_profile(db, user_id, **kwargs)
+    await notify_user(user_id, {"type": "profile_updated"})
+    return {"success": True}
+
+
+@app.post("/api/users/{user_id}/login")
+async def user_login(user_id: int, db: AsyncSession = Depends(get_db)):
+    user = await crud.get_user(db, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    from datetime import datetime
+    await crud.update_profile(db, user_id, last_login=datetime.utcnow())
+    return {"success": True}
+
+
+@app.post("/api/link/generate")
+async def generate_link_code(user_id: int, db: AsyncSession = Depends(get_db)):
+    try:
+        code = await crud.create_linking_code(db, user_id)
+        return {"code": code}
+    except ValueError:
+        raise HTTPException(status_code=404, detail="User not found")
+
+
+@app.post("/api/link/validate")
+async def validate_link_code(code: str, db: AsyncSession = Depends(get_db)):
+    user_id = await crud.validate_linking_code(db, code)
+    if not user_id:
+        raise HTTPException(status_code=400, detail="Invalid or expired code")
+    await crud.update_profile(db, user_id, is_telegram_linked=True)
+    profile = await crud.get_full_profile(db, user_id)
+    return {"success": True, "user_id": user_id, "profile": profile}
 
 
 @app.get("/api/users/{user_id}/inventory")

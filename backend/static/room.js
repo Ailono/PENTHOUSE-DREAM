@@ -1,6 +1,19 @@
 const canvas = document.getElementById('roomCanvas');
 const ctx = canvas.getContext('2d');
 
+function resizeRoomCanvas() {
+  const rect = canvas.getBoundingClientRect();
+  const w = Math.round(rect.width);
+  const h = Math.round(rect.height);
+  if (w > 0 && h > 0 && (canvas.width !== w || canvas.height !== h)) {
+    canvas.width = w;
+    canvas.height = h;
+  }
+}
+
+window.addEventListener('resize', resizeRoomCanvas);
+window.addEventListener('orientationchange', resizeRoomCanvas);
+
 const ITEM_EMOJI = {
   chair: '🪑', table: '🪑', lamp: '💡', carpet: '🟫', painting: '🖼️',
   aquarium: '🪸', fireplace: '🔥', sofa: '🛋️', bookshelf: '📚', plant: '🌿',
@@ -47,24 +60,28 @@ class Room {
   }
 
   draw() {
-    const w = canvas.width, h = canvas.height;
+    const s = Math.min(canvas.width / 800, canvas.height / 500);
+    ctx.save();
+    ctx.scale(s, s);
 
     ctx.fillStyle = '#1a1a2e';
-    ctx.fillRect(0, 0, w, h);
+    ctx.fillRect(0, 0, 800, 500);
 
-    this.drawBackWall(w, h);
+    this.drawBackWall();
     this.drawWindow();
     this.drawDoor();
-    this.drawFloor(w, h);
+    this.drawFloor();
 
     this.character.draw(ctx);
     this.furniture.forEach(f => f.draw(ctx));
-    this.drawBaseboard(w, h);
+    this.drawBaseboard();
+
+    ctx.restore();
   }
 
-  drawBackWall(w, h) {
+  drawBackWall() {
     ctx.fillStyle = this.wallColor;
-    ctx.fillRect(50, 50, w - 100, 330);
+    ctx.fillRect(50, 50, 700, 330);
 
     for (let i = 0; i < 6; i++) {
       const x = 80 + i * 120;
@@ -128,23 +145,23 @@ class Room {
     ctx.fill();
   }
 
-  drawFloor(w, h) {
+  drawFloor() {
     ctx.fillStyle = this.floorColor;
-    ctx.fillRect(50, 380, w - 100, h - 380 - 20);
+    ctx.fillRect(50, 380, 700, 100);
 
-    for (let y = 390; y < h - 20; y += 20) {
+    for (let y = 390; y < 480; y += 20) {
       ctx.strokeStyle = 'rgba(255,255,255,0.05)';
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(50, y);
-      ctx.lineTo(w - 50, y);
+      ctx.lineTo(750, y);
       ctx.stroke();
     }
   }
 
-  drawBaseboard(w, h) {
+  drawBaseboard() {
     ctx.fillStyle = '#2d2d44';
-    ctx.fillRect(48, 378, w - 96, 6);
+    ctx.fillRect(48, 378, 704, 6);
   }
 }
 
@@ -743,6 +760,8 @@ function gameLoop(timestamp) {
 
   requestAnimationFrame(gameLoop);
 }
+
+resizeRoomCanvas();
 
 requestAnimationFrame((t) => {
   lastTime = t;

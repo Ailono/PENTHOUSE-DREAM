@@ -10,8 +10,23 @@ function getColor(num) {
   return REDS.has(num) ? 'red' : 'black';
 }
 
-const SECTOR = (2 * Math.PI) / 37;
-const CX = 150, CY = 150, R = 130, INNER_R = 35;
+let SECTOR = (2 * Math.PI) / 37;
+let CX = 150, CY = 150, R = 130, INNER_R = 35;
+
+function resizeRouletteCanvas() {
+  const rect = rouletteCanvas.getBoundingClientRect();
+  const size = Math.round(Math.min(rect.width, rect.height));
+  if (size > 0 && (rouletteCanvas.width !== size || rouletteCanvas.height !== size)) {
+    rouletteCanvas.width = size;
+    rouletteCanvas.height = size;
+    const s = size / 300;
+    CX = 150 * s; CY = 150 * s; R = 130 * s; INNER_R = 35 * s;
+    if (!spinning) drawRoulette(currentAngle);
+  }
+}
+
+window.addEventListener('resize', resizeRouletteCanvas);
+window.addEventListener('orientationchange', resizeRouletteCanvas);
 
 let currentAngle = 0;
 let spinning = false;
@@ -23,7 +38,7 @@ let targetNumber = -1;
 let onSpinComplete = null;
 
 function drawRoulette(angle) {
-  rCtx.clearRect(0, 0, 300, 300);
+  rCtx.clearRect(0, 0, rouletteCanvas.width, rouletteCanvas.height);
 
   rCtx.save();
   rCtx.beginPath();
@@ -53,9 +68,9 @@ function drawRoulette(angle) {
     rCtx.translate(CX, CY);
     rCtx.rotate(a0 + SECTOR / 2);
     rCtx.fillStyle = '#fff';
-    rCtx.font = num === 0 ? 'bold 10px Arial' : '9px Arial';
+    rCtx.font = (num === 0 ? 'bold ' : '') + Math.round(10 * (CX/150)) + 'px Arial';
     rCtx.textAlign = 'right';
-    rCtx.fillText(num, R - 8, 3);
+    rCtx.fillText(num, R - 8 * (CX/150), 3 * (CX/150));
     rCtx.restore();
   }
 
@@ -67,16 +82,16 @@ function drawRoulette(angle) {
   rCtx.lineWidth = 2;
   rCtx.stroke();
   rCtx.fillStyle = '#e94560';
-  rCtx.font = 'bold 10px Arial';
+  rCtx.font = 'bold ' + Math.round(10 * (CX/150)) + 'px Arial';
   rCtx.textAlign = 'center';
   rCtx.textBaseline = 'middle';
   rCtx.fillText('PD', CX, CY);
 
   rCtx.fillStyle = '#ffd700';
   rCtx.beginPath();
-  rCtx.moveTo(CX + R + 8, CY - 10);
-  rCtx.lineTo(CX + R + 8, CY + 10);
-  rCtx.lineTo(CX + R + 20, CY);
+  rCtx.moveTo(CX + R + 8 * (CX/150), CY - 10 * (CX/150));
+  rCtx.lineTo(CX + R + 8 * (CX/150), CY + 10 * (CX/150));
+  rCtx.lineTo(CX + R + 20 * (CX/150), CY);
   rCtx.closePath();
   rCtx.fill();
 
@@ -102,7 +117,7 @@ function startSpin(targetNum, callback) {
   const offset = (Math.random() - 0.5) * SECTOR * 0.6;
   spinTargetAngle = spinStartAngle + fullSpins * 2 * Math.PI + (2 * Math.PI - targetSector + offset);
 
-  document.getElementById('rouletteResult').textContent = '🎰 Вращение...';
+  document.getElementById('rouletteResult').textContent = '\u{1F3B0} \u0412\u0440\u0430\u0449\u0435\u043D\u0438\u0435...';
 }
 
 function updateSpin() {
@@ -120,10 +135,10 @@ function updateSpin() {
     if (currentAngle < 0) currentAngle += 2 * Math.PI;
 
     const color = getColor(targetNumber);
-    const colorEmoji = { red: '🔴', black: '⚫', green: '🟢' }[color] || '⚪';
+    const colorEmoji = { red: '\u{1F534}', black: '\u{26AB}', green: '\u{1F7E2}' }[color] || '\u{26AA}';
 
     document.getElementById('rouletteResult').innerHTML =
-      `🎰 ${targetNumber} ${colorEmoji}`;
+      `\u{1F3B0} ${targetNumber} ${colorEmoji}`;
 
     if (onSpinComplete) onSpinComplete(targetNumber, color);
     onSpinComplete = null;
@@ -149,22 +164,23 @@ function startRouletteUI() {
   if (rouletteInitialized) return;
   rouletteInitialized = true;
 
+  resizeRouletteCanvas();
   drawRoulette(0);
 
   const controls = document.getElementById('rouletteControls');
   controls.innerHTML = '';
 
   const betTypes = [
-    { label: 'Прямая (x36)', type: 'straight' },
-    { label: 'Сплит (x18)', type: 'split' },
-    { label: 'Стрит (x12)', type: 'street' },
-    { label: 'Корнер (x9)', type: 'corner' },
-    { label: 'Сикслайн (x6)', type: 'sixline' },
-    { label: 'Соседи (x7)', type: 'neighbors' },
-    { label: 'Красное (x2)', type: 'red', value: 'red' },
-    { label: 'Чёрное (x2)', type: 'black', value: 'black' },
-    { label: 'Чёт (x2)', type: 'even', value: 'even' },
-    { label: 'Нечет (x2)', type: 'odd', value: 'odd' },
+    { label: '\u041F\u0440\u044F\u043C\u0430\u044F (x36)', type: 'straight' },
+    { label: '\u0421\u043F\u043B\u0438\u0442 (x18)', type: 'split' },
+    { label: '\u0421\u0442\u0440\u0438\u0442 (x12)', type: 'street' },
+    { label: '\u041A\u043E\u0440\u043D\u0435\u0440 (x9)', type: 'corner' },
+    { label: '\u0421\u0438\u043A\u0441\u043B\u0430\u0439\u043D (x6)', type: 'sixline' },
+    { label: '\u0421\u043E\u0441\u0435\u0434\u0438 (x7)', type: 'neighbors' },
+    { label: '\u041A\u0440\u0430\u0441\u043D\u043E\u0435 (x2)', type: 'red', value: 'red' },
+    { label: '\u0427\u0451\u0440\u043D\u043E\u0435 (x2)', type: 'black', value: 'black' },
+    { label: '\u0427\u0451\u0442 (x2)', type: 'even', value: 'even' },
+    { label: '\u041D\u0435\u0447\u0435\u0442 (x2)', type: 'odd', value: 'odd' },
     { label: '1-18 (x2)', type: 'low', value: 'low' },
     { label: '19-36 (x2)', type: 'high', value: 'high' },
   ];
@@ -176,44 +192,44 @@ function startRouletteUI() {
     btn.addEventListener('click', () => {
       if (spinning) return;
       if (bt.type === 'straight') {
-        const num = prompt('Введи число от 0 до 36:', '17');
+        const num = prompt('\u0412\u0432\u0435\u0434\u0438 \u0447\u0438\u0441\u043B\u043E \u043E\u0442 0 \u0434\u043E 36:', '17');
         if (num === null) return;
         const n = parseInt(num);
-        if (isNaN(n) || n < 0 || n > 36) { alert('Неверное число!'); return; }
-        startSpin(n, (result) => { if (result === n) showNotification('🎉 Прямая ставка! x36'); });
+        if (isNaN(n) || n < 0 || n > 36) { alert('\u041D\u0435\u0432\u0435\u0440\u043D\u043E\u0435 \u0447\u0438\u0441\u043B\u043E!'); return; }
+        startSpin(n, (result) => { if (result === n) showNotification('\u{1F389} \u041F\u0440\u044F\u043C\u0430\u044F \u0441\u0442\u0430\u0432\u043A\u0430! x36'); });
       } else if (bt.type === 'split') {
-        const input = prompt('Введи 2 числа через запятую (напр. 14,17):', '14,17');
+        const input = prompt('\u0412\u0432\u0435\u0434\u0438 2 \u0447\u0438\u0441\u043B\u0430 \u0447\u0435\u0440\u0435\u0437 \u0437\u0430\u043F\u044F\u0442\u0443\u044E (\u043D\u0430\u043F\u0440. 14,17):', '14,17');
         if (!input) return;
         const nums = input.split(',').map(s => parseInt(s.trim()));
-        if (nums.length !== 2 || nums.some(n => isNaN(n) || n < 0 || n > 36)) { alert('Неверно!'); return; }
+        if (nums.length !== 2 || nums.some(n => isNaN(n) || n < 0 || n > 36)) { alert('\u041D\u0435\u0432\u0435\u0440\u043D\u043E!'); return; }
         const randomNum = ROULETTE_NUMBERS[Math.floor(Math.random() * 37)];
-        startSpin(randomNum, (result) => { if (nums.includes(result)) showNotification('🎉 Сплит! x18'); });
+        startSpin(randomNum, (result) => { if (nums.includes(result)) showNotification('\u{1F389} \u0421\u043F\u043B\u0438\u0442! x18'); });
       } else if (bt.type === 'street') {
-        const start = parseInt(prompt('Введи начало ряда (1,4,7,10,13,16,19,22,25,28,31,34):', '1'));
-        if (isNaN(start) || start < 1 || start > 34) { alert('Неверно!'); return; }
+        const start = parseInt(prompt('\u0412\u0432\u0435\u0434\u0438 \u043D\u0430\u0447\u0430\u043B\u043E \u0440\u044F\u0434\u0430 (1,4,7,10,13,16,19,22,25,28,31,34):', '1'));
+        if (isNaN(start) || start < 1 || start > 34) { alert('\u041D\u0435\u0432\u0435\u0440\u043D\u043E!'); return; }
         const streetNums = [start, start + 1, start + 2];
         const randomNum = ROULETTE_NUMBERS[Math.floor(Math.random() * 37)];
-        startSpin(randomNum, (result) => { if (streetNums.includes(result)) showNotification('🎉 Стрит! x12'); });
+        startSpin(randomNum, (result) => { if (streetNums.includes(result)) showNotification('\u{1F389} \u0421\u0442\u0440\u0438\u0442! x12'); });
       } else if (bt.type === 'corner') {
-        const input = prompt('Введи 4 числа (напр. 1,2,4,5):', '1,2,4,5');
+        const input = prompt('\u0412\u0432\u0435\u0434\u0438 4 \u0447\u0438\u0441\u043B\u0430 (\u043D\u0430\u043F\u0440. 1,2,4,5):', '1,2,4,5');
         if (!input) return;
         const nums = input.split(',').map(s => parseInt(s.trim()));
-        if (nums.length !== 4 || nums.some(n => isNaN(n) || n < 0 || n > 36)) { alert('Неверно!'); return; }
+        if (nums.length !== 4 || nums.some(n => isNaN(n) || n < 0 || n > 36)) { alert('\u041D\u0435\u0432\u0435\u0440\u043D\u043E!'); return; }
         const randomNum = ROULETTE_NUMBERS[Math.floor(Math.random() * 37)];
-        startSpin(randomNum, (result) => { if (nums.includes(result)) showNotification('🎉 Корнер! x9'); });
+        startSpin(randomNum, (result) => { if (nums.includes(result)) showNotification('\u{1F389} \u041A\u043E\u0440\u043D\u0435\u0440! x9'); });
       } else if (bt.type === 'sixline') {
-        const start = parseInt(prompt('Введи начало (1,7,13,19,25,31):', '1'));
-        if (isNaN(start) || ![1,7,13,19,25,31].includes(start)) { alert('Неверно!'); return; }
+        const start = parseInt(prompt('\u0412\u0432\u0435\u0434\u0438 \u043D\u0430\u0447\u0430\u043B\u043E (1,7,13,19,25,31):', '1'));
+        if (isNaN(start) || ![1,7,13,19,25,31].includes(start)) { alert('\u041D\u0435\u0432\u0435\u0440\u043D\u043E!'); return; }
         const sixNums = [start, start+1, start+2, start+3, start+4, start+5];
         const randomNum = ROULETTE_NUMBERS[Math.floor(Math.random() * 37)];
-        startSpin(randomNum, (result) => { if (sixNums.includes(result)) showNotification('🎉 Сикслайн! x6'); });
+        startSpin(randomNum, (result) => { if (sixNums.includes(result)) showNotification('\u{1F389} \u0421\u0438\u043A\u0441\u043B\u0430\u0439\u043D! x6'); });
       } else if (bt.type === 'neighbors') {
-        const center = parseInt(prompt('Введи центр (0-36):', '17'));
-        if (isNaN(center) || center < 0 || center > 36) { alert('Неверно!'); return; }
+        const center = parseInt(prompt('\u0412\u0432\u0435\u0434\u0438 \u0446\u0435\u043D\u0442\u0440 (0-36):', '17'));
+        if (isNaN(center) || center < 0 || center > 36) { alert('\u041D\u0435\u0432\u0435\u0440\u043D\u043E!'); return; }
         const idx = ROULETTE_NUMBERS.indexOf(center);
         const neighbors = [-2,-1,0,1,2].map(offset => ROULETTE_NUMBERS[(idx + offset + 37) % 37]);
         const randomNum = ROULETTE_NUMBERS[Math.floor(Math.random() * 37)];
-        startSpin(randomNum, (result) => { if (neighbors.includes(result)) showNotification('🎉 Соседи! x7'); });
+        startSpin(randomNum, (result) => { if (neighbors.includes(result)) showNotification('\u{1F389} \u0421\u043E\u0441\u0435\u0434\u0438! x7'); });
       } else {
         const randomNum = ROULETTE_NUMBERS[Math.floor(Math.random() * 37)];
         startSpin(randomNum, (result, color) => {
@@ -224,7 +240,7 @@ function startRouletteUI() {
           else if (bt.type === 'odd' && result % 2 === 1) win = true;
           else if (bt.type === 'low' && result >= 1 && result <= 18) win = true;
           else if (bt.type === 'high' && result >= 19 && result <= 36) win = true;
-          if (win) showNotification('🎉 Выигрыш! x2');
+          if (win) showNotification('\u{1F389} \u0412\u044B\u0438\u0433\u0440\u044B\u0448! x2');
         });
       }
     });
@@ -232,7 +248,7 @@ function startRouletteUI() {
   });
 
   const clearBtn = document.createElement('button');
-  clearBtn.textContent = '🗑️ Очистить';
+  clearBtn.textContent = '\u{1F5D1}\uFE0F \u041E\u0447\u0438\u0441\u0442\u0438\u0442\u044C';
   clearBtn.addEventListener('click', () => {
     document.getElementById('rouletteResult').textContent = '';
   });

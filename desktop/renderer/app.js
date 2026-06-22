@@ -1,13 +1,17 @@
-const API = 'http://localhost:8000';
-const WS_URL = 'ws://localhost:8000/ws';
+const API = window.location.origin;
+const WS_URL = API.replace(/^http/, 'ws') + '/ws';
 
 let state = {
-  userId: 1,
+  userId: null,
   balance: 0,
   roomLevel: 1,
   happiness: 50,
+  level: 1,
+  xp: 0,
   inventory: [],
   shopItems: [],
+  profile: null,
+  isLoggedIn: false,
 };
 
 let ws = null;
@@ -15,7 +19,8 @@ let ws = null;
 function $(id) { return document.getElementById(id); }
 
 function setStatus(text) {
-  $('statusText').textContent = text;
+  const el = $('statusText');
+  if (el) el.textContent = text;
 }
 
 function showNotification(text, duration = 3000) {
@@ -40,19 +45,33 @@ async function apiPost(path, body = {}) {
   return res.json();
 }
 
+async function apiPut(path, body = {}) {
+  const params = new URLSearchParams(body);
+  const res = await fetch(API + path + '?' + params, { method: 'PUT' });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
 function connectWebSocket() {
+  if (!state.userId) return;
   if (ws) ws.close();
   ws = new WebSocket(WS_URL + '/' + state.userId);
 
   ws.onopen = () => {
-    $('connectionStatus').textContent = '● Подключено';
-    $('connectionStatus').style.color = '#4ecca3';
+    const el = $('connectionStatus');
+    if (el) {
+      el.textContent = '● Подключено';
+      el.style.color = '#4ecca3';
+    }
     setStatus('WebSocket подключён');
   };
 
   ws.onclose = () => {
-    $('connectionStatus').textContent = '○ Отключено';
-    $('connectionStatus').style.color = '#e94560';
+    const el = $('connectionStatus');
+    if (el) {
+      el.textContent = '○ Отключено';
+      el.style.color = '#e94560';
+    }
     setStatus('WebSocket отключён, переподключение...');
     setTimeout(connectWebSocket, 3000);
   };
@@ -60,11 +79,6 @@ function connectWebSocket() {
   ws.onmessage = (event) => {
     const data = JSON.parse(event.data);
     handleWsEvent(data);
-  };
-
-  ws.onerror = () => {
-    $('connectionStatus').textContent = '✕ Ошибка';
-    $('connectionStatus').style.color = '#e94560';
   };
 }
 
@@ -88,40 +102,133 @@ function handleWsEvent(data) {
     case 'room_update':
       setStatus('Комната обновлена');
       break;
+    case 'profile_updated':
+      loadProfile();
+      break;
+    case 'pong':
+      break;
   }
 }
 
-async function loadUserData() {
+// --- Login ---
+
+function showLogin() {
+  $('loginOverlay').style.display = 'flex';
+}
+
+function hideLogin() {
+  $('loginOverlay').style.display = 'none';
+  state.isLoggedIn = true;
+}
+
+async function loginWithCode(code) {
+  const errorEl = $('loginError');
   try {
-    const user = await apiGet('/api/users/' + state.userId);
-    state.balance = user.balance || 0;
-    state.roomLevel = user.room_level || 1;
-    state.happiness = user.happiness || 50;
-  } catch {
-    await apiPost('/api/users/', { user_id: state.userId });
+    const result = await apiPost('/api/link/validate', { code });
+    if (result.success) {
+      state.userId = result.user_id;
+      state.profile = result.profile;
+      localStorage.setItem('pd_userId', result.user_id);
+      localStorage.setItem('pd_linked', 'true');
+      hideLogin();
+      await afterLogin();
+      showNotification('✅ Аккаунт связан с Telegram!');
+    }
+  } catch (e) {
+    errorEl.textContent = '❌ Неверный или просроченный код';
+    setTimeout(() => errorEl.textContent = '', 3000);
   }
 }
 
-async function loadInventory() {
-  try {
-    state.inventory = await apiGet('/api/users/' + state.userId + '/inventory');
-  } catch {
-    state.inventory = [];
+async function loginAsGuest() {
+  let guestId = localStorage.getItem('pd_userId');
+  if (!guestId) {
+    guestId = Math.floor(Math.random() * 900000) + 100000;
+    try {
+      await apiPost('/api/users/', { user_id: guestId, username: 'Гость' });
+    } catch {}
+    localStorage.setItem('pd_userId', guestId);
   }
+  state.userId = parseInt(guestId);
+  localStorage.setItem('pd_linked', 'false');
+  hideLogin();
+  await afterLogin();
 }
 
-async function loadShop() {
+async function afterLogin() {
+  await apiPost('/api/users/' + state.userId + '/login');
+  await loadProfile();
+  await loadInventory();
+  await loadShop();
+  updateUI();
+  connectWebSocket();
+  setStatus('Готово');
+}
+
+// --- Profile ---
+
+async function loadProfile() {
   try {
-    state.shopItems = await apiGet('/api/shop');
-  } catch {
-    state.shopItems = [];
+    state.profile = await apiGet('/api/users/' + state.userId + '/profile');
+    state.balance = state.profile.balance;
+    state.roomLevel = state.profile.room_level;
+    state.happiness = state.profile.happiness;
+    state.level = state.profile.level;
+    state.xp = state.profile.xp;
+    updateUI();
+    renderProfile();
+  } catch {}
+}
+
+function renderProfile() {
+  const p = state.profile;
+  if (!p) return;
+
+  $('profileUsernameDisplay').textContent = p.username || 'Без имени';
+  $('profileBioDisplay').textContent = p.bio || '';
+  $('profileBioDisplay').style.display = p.bio ? 'block' : 'none';
+
+  $('pLevel').textContent = p.level;
+  $('pBalance').textContent = p.balance.toLocaleString();
+  $('pRoom').textContent = p.room_level;
+  $('pHappiness').textContent = p.happiness + '%';
+  $('pInventory').textContent = p.inventory_count;
+  $('pAchievements').textContent = p.achievements_count;
+  $('pGamesWon').textContent = p.games_won;
+  $('pXp').textContent = p.xp;
+
+  const xpForCurrent = ((p.level - 1) ** 2) * 100;
+  const xpForNext = (p.level ** 2) * 100;
+  const xpInLevel = p.xp - xpForCurrent;
+  const xpNeeded = xpForNext - xpForCurrent;
+  const pct = Math.min(100, Math.round((xpInLevel / Math.max(xpNeeded, 1)) * 100));
+  $('pXpFill').style.width = pct + '%';
+  $('pXpInfo').textContent = `${xpInLevel} / ${xpNeeded} XP`;
+
+  $('pCreatedAt').textContent = p.created_at ? p.created_at.slice(0, 10) : '—';
+  $('pLastLogin').textContent = p.last_login ? p.last_login.slice(0, 10) : '—';
+
+  $('profileAvatar').textContent = p.avatar_url || (p.username ? p.username[0].toUpperCase() : '👤');
+
+  if (p.is_telegram_linked) {
+    $('profileLinkSection').style.display = 'none';
+    $('profileLinkedSection').style.display = 'block';
+    $('profileTelegramUser').textContent = p.telegram_username || 'Telegram';
+  } else {
+    $('profileLinkSection').style.display = 'block';
+    $('profileLinkedSection').style.display = 'none';
   }
 }
 
 function updateUI() {
-  $('balanceDisplay').textContent = state.balance.toLocaleString();
-  $('roomLevelDisplay').textContent = state.roomLevel;
-  $('happinessDisplay').textContent = state.happiness;
+  const bd = $('balanceDisplay');
+  const rd = $('roomLevelDisplay');
+  const hd = $('happinessDisplay');
+  const ld = $('levelDisplay');
+  if (bd) bd.textContent = state.balance.toLocaleString();
+  if (rd) rd.textContent = state.roomLevel;
+  if (hd) hd.textContent = state.happiness;
+  if (ld) ld.textContent = state.level;
   renderInventory();
   renderShop();
 }
@@ -174,6 +281,24 @@ function renderShop() {
   `).join('');
 }
 
+async function loadInventory() {
+  try {
+    state.inventory = await apiGet('/api/users/' + state.userId + '/inventory');
+  } catch {
+    state.inventory = [];
+  }
+}
+
+async function loadShop() {
+  try {
+    state.shopItems = await apiGet('/api/shop');
+  } catch {
+    state.shopItems = [];
+  }
+}
+
+// --- Sidebar navigation ---
+
 document.querySelectorAll('.sidebar button[data-view]').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.sidebar button').forEach(b => b.classList.remove('active'));
@@ -185,25 +310,106 @@ document.querySelectorAll('.sidebar button[data-view]').forEach(btn => {
     if (view === 'roulette' && typeof window.startRouletteUI === 'function') {
       window.startRouletteUI();
     }
+    if (view === 'profile') {
+      loadProfile();
+    }
   });
 });
 
 $('refreshBtn').addEventListener('click', async () => {
   setStatus('Загрузка...');
-  await Promise.all([loadUserData(), loadInventory(), loadShop()]);
+  await Promise.all([loadProfile(), loadInventory(), loadShop()]);
   updateUI();
   setStatus('Обновлено');
   showNotification('✅ Данные обновлены');
 });
 
+// --- Login UI ---
+
+$('loginCodeBtn').addEventListener('click', () => {
+  const code = $('loginCodeInput').value.trim().toUpperCase();
+  if (code) loginWithCode(code);
+});
+
+$('loginCodeInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') $('loginCodeBtn').click();
+});
+
+$('loginGuestBtn').addEventListener('click', loginAsGuest);
+
+// --- Profile Edit ---
+
+$('profileEditBtn').addEventListener('click', () => {
+  const form = $('profileEditForm');
+  if (form.style.display === 'none' || !form.style.display) {
+    const p = state.profile;
+    $('editUsername').value = p.username || '';
+    $('editBio').value = p.bio || '';
+    form.style.display = 'block';
+  } else {
+    form.style.display = 'none';
+  }
+});
+
+$('profileCancelBtn').addEventListener('click', () => {
+  $('profileEditForm').style.display = 'none';
+});
+
+$('profileSaveBtn').addEventListener('click', async () => {
+  const username = $('editUsername').value.trim();
+  const bio = $('editBio').value.trim();
+  try {
+    await apiPut('/api/users/' + state.userId + '/profile', { username, bio });
+    $('profileEditForm').style.display = 'none';
+    await loadProfile();
+    showNotification('✅ Профиль обновлён');
+  } catch {
+    showNotification('❌ Ошибка сохранения');
+  }
+});
+
+// --- Profile Link ---
+
+$('profileLinkBtn').addEventListener('click', async () => {
+  const code = $('profileLinkInput').value.trim().toUpperCase();
+  const statusEl = $('profileLinkStatus');
+  if (!code) {
+    statusEl.textContent = '❌ Введи код';
+    return;
+  }
+  try {
+    const result = await apiPost('/api/link/validate', { code });
+    if (result.success) {
+      state.userId = result.user_id;
+      state.profile = result.profile;
+      localStorage.setItem('pd_userId', result.user_id);
+      localStorage.setItem('pd_linked', 'true');
+      showNotification('✅ Telegram подключён!');
+      await loadProfile();
+    }
+  } catch {
+    statusEl.textContent = '❌ Неверный или просроченный код';
+    setTimeout(() => statusEl.textContent = '', 3000);
+  }
+});
+
+// --- Init ---
+
 async function init() {
-  setStatus('Загрузка данных...');
-  await loadUserData();
-  await loadInventory();
-  await loadShop();
-  updateUI();
-  connectWebSocket();
-  setStatus('Готово');
+  const savedId = localStorage.getItem('pd_userId');
+  const linked = localStorage.getItem('pd_linked');
+
+  if (savedId && linked === 'true') {
+    state.userId = parseInt(savedId);
+    hideLogin();
+    await afterLogin();
+  } else if (savedId && linked === 'false') {
+    state.userId = parseInt(savedId);
+    hideLogin();
+    await afterLogin();
+  } else {
+    showLogin();
+  }
 }
 
 document.addEventListener('DOMContentLoaded', init);

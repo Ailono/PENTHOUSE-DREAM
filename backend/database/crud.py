@@ -1,9 +1,11 @@
+import random
+import string
+from datetime import date, datetime, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
-from datetime import date
 from database.models import (
     User, InventoryItem, ShopItem, RouletteStats,
-    Achievement, Business, PhotoHunt,
+    Achievement, Business, PhotoHunt, LinkingCode,
 )
 
 
@@ -264,3 +266,108 @@ async def get_pending_hunts(db: AsyncSession, user_id: int) -> list[PhotoHunt]:
         .where(PhotoHunt.user_id == user_id, PhotoHunt.status == "pending")
     )
     return result.scalars().all()
+
+
+# --- Profile ---
+
+async def update_profile(
+    db: AsyncSession, user_id: int, **kwargs
+) -> User | None:
+    user = await get_user(db, user_id)
+    if not user:
+        return None
+    for key, value in kwargs.items():
+        if hasattr(user, key) and value is not None:
+            setattr(user, key, value)
+    await db.flush()
+    await db.refresh(user)
+    return user
+
+
+async def add_xp(db: AsyncSession, user_id: int, amount: int) -> User:
+    user = await get_user(db, user_id)
+    if not user:
+        raise ValueError("User not found")
+    user.xp += amount
+    new_level = int((user.xp / 100) ** 0.5) + 1
+    if new_level > user.level:
+        user.level = new_level
+    await db.flush()
+    await db.refresh(user)
+    return user
+
+
+async def get_full_profile(db: AsyncSession, user_id: int) -> dict | None:
+    user = await get_user(db, user_id)
+    if not user:
+        return None
+    inventory_count = len(user.inventory) if user.inventory else 0
+    achievements_count = len(user.achievements) if user.achievements else 0
+    return {
+        "user_id": user.user_id,
+        "username": user.username,
+        "balance": user.balance,
+        "room_level": user.room_level,
+        "happiness": user.happiness,
+        "inventory_count": inventory_count,
+        "achievements_count": achievements_count,
+        "avatar_url": user.avatar_url,
+        "bio": user.bio,
+        "xp": user.xp,
+        "level": user.level,
+        "games_won": user.games_won,
+        "last_login": user.last_login.isoformat() if user.last_login else None,
+        "created_at": user.created_at.isoformat() if user.created_at else None,
+        "telegram_username": user.telegram_username,
+        "is_telegram_linked": user.is_telegram_linked,
+    }
+
+
+# --- Linking Codes ---
+
+def _generate_code(length: int = 8) -> str:
+    chars = string.ascii_uppercase + string.digits
+    return "".join(random.choices(chars, k=length))
+
+
+async def create_linking_code(db: AsyncSession, user_id: int) -> str:
+    user = await get_user(db, user_id)
+    if not user:
+        raise ValueError("User not found")
+
+    existing = await db.execute(
+        select(LinkingCode).where(
+            LinkingCode.user_id == user_id,
+            LinkingCode.used == False,
+            LinkingCode.expires_at > datetime.utcnow(),
+        )
+    )
+    active = existing.scalar_one_or_none()
+    if active:
+        return active.code
+
+    code = _generate_code()
+    linking = LinkingCode(
+        user_id=user_id,
+        code=code,
+        expires_at=datetime.utcnow() + timedelta(minutes=5),
+    )
+    db.add(linking)
+    await db.flush()
+    return code
+
+
+async def validate_linking_code(db: AsyncSession, code: str) -> int | None:
+    result = await db.execute(
+        select(LinkingCode).where(
+            LinkingCode.code == code.upper(),
+            LinkingCode.used == False,
+            LinkingCode.expires_at > datetime.utcnow(),
+        )
+    )
+    linking = result.scalar_one_or_none()
+    if not linking:
+        return None
+    linking.used = True
+    await db.flush()
+    return linking.user_id

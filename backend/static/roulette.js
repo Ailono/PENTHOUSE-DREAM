@@ -10,8 +10,23 @@ function getColor(num) {
   return REDS.has(num) ? 'red' : 'black';
 }
 
-const SECTOR = (2 * Math.PI) / 37;
-const CX = 150, CY = 150, R = 130, INNER_R = 35;
+let SECTOR = (2 * Math.PI) / 37;
+let CX = 150, CY = 150, R = 130, INNER_R = 35;
+
+function resizeRouletteCanvas() {
+  const rect = rouletteCanvas.getBoundingClientRect();
+  const size = Math.round(Math.min(rect.width, rect.height));
+  if (size > 0 && (rouletteCanvas.width !== size || rouletteCanvas.height !== size)) {
+    rouletteCanvas.width = size;
+    rouletteCanvas.height = size;
+    const s = size / 300;
+    CX = 150 * s; CY = 150 * s; R = 130 * s; INNER_R = 35 * s;
+    if (!spinning) drawRoulette(currentAngle);
+  }
+}
+
+window.addEventListener('resize', resizeRouletteCanvas);
+window.addEventListener('orientationchange', resizeRouletteCanvas);
 
 let currentAngle = 0;
 let spinning = false;
@@ -23,7 +38,7 @@ let targetNumber = -1;
 let onSpinComplete = null;
 
 function drawRoulette(angle) {
-  rCtx.clearRect(0, 0, 300, 300);
+  rCtx.clearRect(0, 0, rouletteCanvas.width, rouletteCanvas.height);
 
   rCtx.save();
   rCtx.beginPath();
@@ -53,9 +68,9 @@ function drawRoulette(angle) {
     rCtx.translate(CX, CY);
     rCtx.rotate(a0 + SECTOR / 2);
     rCtx.fillStyle = '#fff';
-    rCtx.font = num === 0 ? 'bold 10px Arial' : '9px Arial';
+    rCtx.font = (num === 0 ? 'bold ' : '') + Math.round(10 * (CX/150)) + 'px Arial';
     rCtx.textAlign = 'right';
-    rCtx.fillText(num, R - 8, 3);
+    rCtx.fillText(num, R - 8 * (CX/150), 3 * (CX/150));
     rCtx.restore();
   }
 
@@ -67,16 +82,16 @@ function drawRoulette(angle) {
   rCtx.lineWidth = 2;
   rCtx.stroke();
   rCtx.fillStyle = '#e94560';
-  rCtx.font = 'bold 10px Arial';
+  rCtx.font = 'bold ' + Math.round(10 * (CX/150)) + 'px Arial';
   rCtx.textAlign = 'center';
   rCtx.textBaseline = 'middle';
   rCtx.fillText('PD', CX, CY);
 
   rCtx.fillStyle = '#ffd700';
   rCtx.beginPath();
-  rCtx.moveTo(CX + R + 8, CY - 10);
-  rCtx.lineTo(CX + R + 8, CY + 10);
-  rCtx.lineTo(CX + R + 20, CY);
+  rCtx.moveTo(CX + R + 8 * (CX/150), CY - 10 * (CX/150));
+  rCtx.lineTo(CX + R + 8 * (CX/150), CY + 10 * (CX/150));
+  rCtx.lineTo(CX + R + 20 * (CX/150), CY);
   rCtx.closePath();
   rCtx.fill();
 
@@ -149,6 +164,7 @@ function startRouletteUI() {
   if (rouletteInitialized) return;
   rouletteInitialized = true;
 
+  resizeRouletteCanvas();
   drawRoulette(0);
 
   const controls = document.getElementById('rouletteControls');

@@ -241,6 +241,339 @@ canvas {
   z-index: 100;
 }
 
+/* --- Login Overlay --- */
+
+.login-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 10, 30, 0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  backdrop-filter: blur(4px);
+}
+
+.login-card {
+  background: #16213e;
+  border: 1px solid #0f3460;
+  border-radius: 16px;
+  padding: 32px;
+  max-width: 400px;
+  width: 90%;
+  text-align: center;
+  animation: fadeIn 0.3s ease;
+}
+
+.login-logo {
+  font-size: 64px;
+  margin-bottom: 8px;
+}
+
+.login-card h1 {
+  color: #e94560;
+  font-size: 22px;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+
+.login-subtitle {
+  color: #888;
+  font-size: 14px;
+  margin-bottom: 24px;
+}
+
+.login-section {
+  margin: 16px 0;
+}
+
+.login-section h3 {
+  color: #e0e0e0;
+  font-size: 16px;
+  margin-bottom: 8px;
+}
+
+.login-code-row {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.login-input {
+  flex: 1;
+  padding: 10px 14px;
+  background: #0f3460;
+  border: 1px solid #1a4a8a;
+  border-radius: 8px;
+  color: #e0e0e0;
+  font-size: 16px;
+  text-align: center;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.login-input:focus {
+  border-color: #e94560;
+}
+
+.login-btn {
+  padding: 10px 20px;
+  background: #e94560;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background 0.2s;
+  white-space: nowrap;
+}
+
+.login-btn:hover {
+  background: #c73650;
+}
+
+.login-btn.secondary {
+  background: #0f3460;
+  color: #e0e0e0;
+}
+
+.login-btn.secondary:hover {
+  background: #1a4a8a;
+}
+
+.login-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #555;
+  font-size: 13px;
+  margin: 16px 0;
+}
+
+.login-divider::before,
+.login-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #0f3460;
+}
+
+.login-error {
+  color: #e94560;
+  font-size: 13px;
+  margin-top: 8px;
+  min-height: 20px;
+}
+
+/* --- Profile Panel --- */
+
+.profile-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.profile-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: #0f3460;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  border: 2px solid #e94560;
+  flex-shrink: 0;
+}
+
+.profile-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.profile-username {
+  font-size: 20px;
+  font-weight: bold;
+  color: #e0e0e0;
+}
+
+.profile-bio {
+  font-size: 13px;
+  color: #888;
+  margin-top: 4px;
+}
+
+.profile-edit-btn {
+  background: #0f3460;
+  border: none;
+  color: #e0e0e0;
+  font-size: 18px;
+  padding: 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+
+.profile-edit-btn:hover {
+  background: #1a4a8a;
+}
+
+.profile-edit-form {
+  background: #0f3460;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.profile-input {
+  width: 100%;
+  padding: 8px 12px;
+  background: #1a1a2e;
+  border: 1px solid #1a4a8a;
+  border-radius: 6px;
+  color: #e0e0e0;
+  font-size: 14px;
+  outline: none;
+  margin-bottom: 8px;
+}
+
+.profile-input:focus {
+  border-color: #e94560;
+}
+
+.profile-textarea {
+  width: 100%;
+  padding: 8px 12px;
+  background: #1a1a2e;
+  border: 1px solid #1a4a8a;
+  border-radius: 6px;
+  color: #e0e0e0;
+  font-size: 14px;
+  outline: none;
+  resize: vertical;
+  font-family: inherit;
+  margin-bottom: 8px;
+}
+
+.profile-textarea:focus {
+  border-color: #e94560;
+}
+
+.profile-edit-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.profile-edit-actions .login-btn {
+  flex: 1;
+}
+
+.profile-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.stat-card {
+  background: #0f3460;
+  border-radius: 8px;
+  padding: 12px 8px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.stat-icon {
+  font-size: 20px;
+}
+
+.stat-value {
+  font-size: 18px;
+  font-weight: bold;
+  color: #e0e0e0;
+}
+
+.stat-label {
+  font-size: 11px;
+  color: #888;
+}
+
+.profile-xp-bar {
+  background: #0f3460;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 16px;
+}
+
+.xp-label {
+  font-size: 13px;
+  color: #aaa;
+  margin-bottom: 6px;
+}
+
+.xp-track {
+  height: 8px;
+  background: #1a1a2e;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+
+.xp-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4ecca3, #e94560);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.xp-level-info {
+  font-size: 11px;
+  color: #666;
+  text-align: right;
+}
+
+.profile-link-section {
+  background: #0f3460;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 16px;
+}
+
+.profile-link-section h4 {
+  color: #e0e0e0;
+  margin-bottom: 8px;
+}
+
+.profile-linked-section {
+  background: #0f3460;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 16px;
+  border: 1px solid #4ecca3;
+}
+
+.profile-linked-section h4 {
+  color: #4ecca3;
+  margin-bottom: 4px;
+}
+
+.profile-footer {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #666;
+  border-top: 1px solid #0f3460;
+  padding-top: 12px;
+}
+
 @media (max-width: 768px) {
   body {
     overflow: auto;
@@ -360,6 +693,23 @@ canvas {
 
   .status-bar {
     display: none;
+  }
+
+  .profile-stats {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .login-card {
+    padding: 24px 16px;
+  }
+
+  .login-code-row {
+    flex-direction: column;
+  }
+
+  .profile-footer {
+    flex-direction: column;
+    gap: 4px;
   }
 }
 

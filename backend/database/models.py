@@ -15,11 +15,38 @@ class User(Base):
     happiness = Column(Integer, default=50)
     created_at = Column(DateTime, server_default=func.now())
 
+    # --- Profile fields ---
+    avatar_url = Column(String(255), nullable=True)
+    bio = Column(String(500), nullable=True)
+    xp = Column(BigInteger, default=0)
+    level = Column(Integer, default=1)
+    games_won = Column(Integer, default=0)
+    last_login = Column(DateTime, nullable=True)
+
+    # --- Telegram linking ---
+    telegram_username = Column(String(100), nullable=True)
+    is_telegram_linked = Column(Boolean, default=False)
+    linking_code = Column(String(10), nullable=True, unique=True)
+
     inventory = relationship("InventoryItem", back_populates="user")
     roulette_stats = relationship("RouletteStats", back_populates="user", uselist=False)
     achievements = relationship("Achievement", back_populates="user")
     businesses = relationship("Business", back_populates="user")
     photo_hunts = relationship("PhotoHunt", back_populates="user")
+    linking_codes = relationship("LinkingCode", back_populates="user")
+
+
+class LinkingCode(Base):
+    __tablename__ = "linking_codes"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(BigInteger, ForeignKey("users.user_id"), nullable=False)
+    code = Column(String(10), unique=True, nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+    used = Column(Boolean, default=False)
+    created_at = Column(DateTime, server_default=func.now())
+
+    user = relationship("User", back_populates="linking_codes")
 
 
 class InventoryItem(Base):

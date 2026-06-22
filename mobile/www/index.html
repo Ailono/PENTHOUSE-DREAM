@@ -8,12 +8,43 @@
 </head>
 <body>
 
+<!-- Login Overlay -->
+<div id="loginOverlay" class="login-overlay">
+  <div class="login-card">
+    <div class="login-logo">🏠</div>
+    <h1>PENTHOUSE DREAM</h1>
+    <p class="login-subtitle">Войди в свою комнату мечты</p>
+
+    <div class="login-section">
+      <h3>🔗 Есть код из Telegram?</h3>
+      <p style="font-size:13px;color:#aaa;margin-bottom:10px;">
+        Введи код из команды /link в боте
+      </p>
+      <div class="login-code-row">
+        <input type="text" id="loginCodeInput" class="login-input" placeholder="Например: ABC12345" maxlength="10">
+        <button id="loginCodeBtn" class="login-btn">Связать</button>
+      </div>
+      <div id="loginError" class="login-error"></div>
+    </div>
+
+    <div class="login-divider"><span>или</span></div>
+
+    <div class="login-section">
+      <button id="loginGuestBtn" class="login-btn secondary">👤 Продолжить как гость</button>
+      <p style="font-size:12px;color:#666;margin-top:8px;">
+        Данные не будут синхронизироваться с Telegram
+      </p>
+    </div>
+  </div>
+</div>
+
 <div class="top-bar">
   <h1>🏠 PENTHOUSE DREAM</h1>
   <div class="top-info">
     <span>💰 <span id="balanceDisplay">0</span></span>
     <span>🏠 Ур. <span id="roomLevelDisplay">1</span></span>
     <span>😊 <span id="happinessDisplay">50</span>%</span>
+    <span>⭐ <span id="levelDisplay">1</span></span>
   </div>
 </div>
 
@@ -23,6 +54,7 @@
     <button data-view="roulette">🎰 Рулетка</button>
     <button data-view="inventory">🎒 Инвентарь</button>
     <button data-view="shop">🏪 Магазин</button>
+    <button data-view="profile">👤 Профиль</button>
     <hr style="border-color:#0f3460;margin:8px 0;">
     <button id="refreshBtn">🔄 Обновить</button>
   </div>
@@ -54,6 +86,96 @@
     <div class="panel" id="shopPanel">
       <h3>🏪 Магазин</h3>
       <div id="shopItems"></div>
+    </div>
+
+    <div class="panel" id="profilePanel">
+      <div class="profile-header">
+        <div class="profile-avatar" id="profileAvatar">👤</div>
+        <div class="profile-info">
+          <div id="profileUsernameDisplay" class="profile-username">Загрузка...</div>
+          <div id="profileBioDisplay" class="profile-bio"></div>
+        </div>
+        <button id="profileEditBtn" class="profile-edit-btn">✏️</button>
+      </div>
+
+      <div id="profileEditForm" class="profile-edit-form" style="display:none;">
+        <input type="text" id="editUsername" class="profile-input" placeholder="Имя" maxlength="50">
+        <textarea id="editBio" class="profile-textarea" placeholder="О себе" maxlength="500" rows="3"></textarea>
+        <div class="profile-edit-actions">
+          <button id="profileSaveBtn" class="login-btn">Сохранить</button>
+          <button id="profileCancelBtn" class="login-btn secondary">Отмена</button>
+        </div>
+      </div>
+
+      <div class="profile-stats">
+        <div class="stat-card">
+          <span class="stat-icon">⭐</span>
+          <span class="stat-value" id="pLevel">1</span>
+          <span class="stat-label">Уровень</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-icon">💰</span>
+          <span class="stat-value" id="pBalance">0</span>
+          <span class="stat-label">Баланс</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-icon">🏠</span>
+          <span class="stat-value" id="pRoom">1</span>
+          <span class="stat-label">Комната</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-icon">😊</span>
+          <span class="stat-value" id="pHappiness">50</span>
+          <span class="stat-label">Счастье</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-icon">🎒</span>
+          <span class="stat-value" id="pInventory">0</span>
+          <span class="stat-label">Предметы</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-icon">🏆</span>
+          <span class="stat-value" id="pAchievements">0</span>
+          <span class="stat-label">Достижения</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-icon">🎮</span>
+          <span class="stat-value" id="pGamesWon">0</span>
+          <span class="stat-label">Победы</span>
+        </div>
+      </div>
+
+      <div class="profile-xp-bar">
+        <div class="xp-label">Опыт: <span id="pXp">0</span></div>
+        <div class="xp-track">
+          <div class="xp-fill" id="pXpFill" style="width:0%"></div>
+        </div>
+        <div class="xp-level-info" id="pXpInfo">0 / 100</div>
+      </div>
+
+      <div class="profile-link-section" id="profileLinkSection">
+        <h4>🔗 Связать с Telegram</h4>
+        <p style="font-size:13px;color:#aaa;">
+          Введи код из команды <b>/link</b> в Telegram-боте
+        </p>
+        <div class="login-code-row">
+          <input type="text" id="profileLinkInput" class="login-input" placeholder="Код" maxlength="10">
+          <button id="profileLinkBtn" class="login-btn">Подключить</button>
+        </div>
+        <div id="profileLinkStatus" class="login-error"></div>
+      </div>
+
+      <div id="profileLinkedSection" class="profile-linked-section" style="display:none;">
+        <h4>✅ Telegram подключён</h4>
+        <p style="font-size:13px;color:#4ecca3;">
+          Твой аккаунт синхронизирован с Telegram: <span id="profileTelegramUser"></span>
+        </p>
+      </div>
+
+      <div class="profile-footer">
+        <span>Зарегистрирован: <span id="pCreatedAt"></span></span>
+        <span>Последний вход: <span id="pLastLogin"></span></span>
+      </div>
     </div>
   </div>
 </div>

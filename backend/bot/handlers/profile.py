@@ -1,6 +1,6 @@
 from aiogram import Router, types, F
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-from database.crud import get_user, get_user_inventory, get_user_achievements
+from database.crud import get_user, get_user_inventory, get_user_achievements, get_full_profile, create_linking_code
 from database.database import get_db_session
 from game_logic.achievements import ACHIEVEMENTS
 from game_logic.economy import room_level_up_cost, room_max_level
@@ -13,27 +13,35 @@ router = Router()
 async def cmd_stats(message: types.Message):
     session = await get_db_session()
     try:
-        user = await get_user(session, message.from_user.id)
-        if not user:
+        profile = await get_full_profile(session, message.from_user.id)
+        if not profile:
             await message.answer("❌ Пользователь не найден.")
             return
 
-        inv = await get_user_inventory(session, message.from_user.id)
-        ach = await get_user_achievements(session, message.from_user.id)
+        linked_status = "✅ Да" if profile.get("is_telegram_linked") else "❌ Нет"
+        level_progress = profile["xp"] - (profile["level"] - 1) ** 2 * 100
+        next_level_xp = (profile["level"] ** 2) * 100 - (profile["level"] - 1) ** 2 * 100
+        progress_pct = min(100, int((level_progress / max(next_level_xp, 1)) * 100))
 
         text = (
             f"📊 Статистика игрока\n\n"
-            f"💰 Баланс: {user.balance:,}\n"
-            f"🏠 Уровень комнаты: {user.room_level}\n"
-            f"😊 Счастье: {user.happiness}%\n"
-            f"🎒 Предметов: {len(inv)}\n"
-            f"🏆 Достижений: {len(ach)}\n"
-            f"📅 Зарегистрирован: {user.created_at.date() if user.created_at else 'сегодня'}"
+            f"👤 Имя: {profile['username'] or 'Не установлено'}\n"
+            f"⭐ Уровень: {profile['level']} (XP: {profile['xp']})\n"
+            f"  ▰ {'▰' * (progress_pct // 10)}{'▱' * (10 - progress_pct // 10)} {progress_pct}%\n"
+            f"💰 Баланс: {profile['balance']:,}\n"
+            f"🏠 Уровень комнаты: {profile['room_level']}\n"
+            f"😊 Счастье: {profile['happiness']}%\n"
+            f"🎒 Предметов: {profile['inventory_count']}\n"
+            f"🏆 Достижений: {profile['achievements_count']}\n"
+            f"🎮 Побед в играх: {profile['games_won']}\n"
+            f"📅 Зарегистрирован: {(profile.get('created_at') or 'сегодня')[:10]}\n"
+            f"🔗 Telegram связан: {linked_status}"
         )
 
         builder = InlineKeyboardBuilder()
         builder.button(text="🏆 Достижения", callback_data="profile_achievements")
         builder.button(text="🏠 Улучшить комнату", callback_data="profile_room_upgrade")
+        builder.button(text="🔗 Связать веб/APK", callback_data="profile_link_code")
         builder.adjust(1)
 
         await message.answer(text, reply_markup=builder.as_markup())
@@ -104,5 +112,25 @@ async def upgrade_room(callback: types.CallbackQuery):
             f"💰 Баланс: {user.balance:,}"
         )
         await callback.message.edit_text(new_text)
+    finally:
+        await session.close()
+
+
+@router.callback_query(F.data == "profile_link_code")
+async def generate_link_code(callback: types.CallbackQuery):
+    session = await get_db_session()
+    try:
+        code = await create_linking_code(session, callback.from_user.id)
+        await session.commit()
+        text = (
+            f"🔗 Код для связки аккаунта\n\n"
+            f"Твой код: <b>{code}</b>\n\n"
+            f"1️⃣ Открой веб-версию или APK\n"
+            f"2️⃣ Перейди в Профиль → «Связать Telegram»\n"
+            f"3️⃣ Введи этот код\n\n"
+            f"⏳ Код действителен 5 минут"
+        )
+        await callback.message.answer(text, parse_mode="HTML")
+        await callback.answer()
     finally:
         await session.close()

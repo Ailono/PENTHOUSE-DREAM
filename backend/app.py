@@ -7,8 +7,8 @@ from database.database import engine, get_db
 from database import crud
 from game_logic import roulette as roulette_logic
 import time
-import asyncio
 import logging
+import os
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -50,11 +50,35 @@ async def startup():
         await conn.run_sync(Base.metadata.create_all)
     logger.info("Database tables created")
 
+    render_url = os.environ.get("RENDER_URL", "")
+    if render_url:
+        from bot.webhook import set_webhook
+        webhook_url = f"{render_url}/webhook"
+        await set_webhook(webhook_url)
+        logger.info(f"Webhook set to {webhook_url}")
+
 
 @app.on_event("shutdown")
 async def shutdown():
+    from bot.webhook import delete_webhook, bot
+    try:
+        await delete_webhook()
+    except Exception:
+        pass
+    await bot.session.close()
     await engine.dispose()
-    logger.info("Engine disposed")
+    logger.info("Shutdown complete")
+
+
+@app.post("/webhook")
+async def telegram_webhook(request: Request):
+    from bot.webhook import process_update
+    data = await request.json()
+    try:
+        await process_update(data)
+    except Exception as e:
+        logger.error(f"Webhook error: {e}")
+    return {"ok": True}
 
 
 active_connections: dict[int, WebSocket] = {}
@@ -69,7 +93,6 @@ async def websocket_endpoint(websocket: WebSocket, user_id: int):
         while True:
             data = await websocket.receive_json()
             msg_type = data.get("type")
-
             if msg_type == "roulette_result":
                 logger.info(f"Roulette result from user {user_id}: {data}")
             elif msg_type == "room_update":
@@ -92,8 +115,6 @@ async def notify_user(user_id: int, event: dict):
         except Exception:
             active_connections.pop(user_id, None)
 
-
-# --- API Endpoints ---
 
 @app.get("/")
 async def root():
@@ -156,8 +177,6 @@ async def add_balance(user_id: int, amount: int, db: AsyncSession = Depends(get_
     return {"balance": user.balance}
 
 
-# --- Shop ---
-
 @app.get("/api/shop")
 async def get_shop(db: AsyncSession = Depends(get_db)):
     items = await crud.get_todays_shop(db)
@@ -176,8 +195,6 @@ async def buy_item(user_id: int, item_id: int, db: AsyncSession = Depends(get_db
     return result
 
 
-# --- Roulette ---
-
 @app.get("/api/roulette")
 async def get_roulette_info():
     return {
@@ -190,22 +207,14 @@ async def get_roulette_info():
 async def spin_roulette(user_id: int, bet_type: str, bet_amount: int, bet_value: str = None, db: AsyncSession = Depends(get_db)):
     if bet_amount <= 0:
         raise HTTPException(status_code=400, detail="Bet must be positive")
-
     user = await crud.get_user(db, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     if user.balance < bet_amount:
         raise HTTPException(status_code=400, detail="Insufficient balance")
-
     result = roulette_logic.spin(bet_type, bet_amount, bet_value)
     await crud.add_balance(db, user_id, result["payout"] - bet_amount)
-    await crud.update_roulette_stats(
-        db, user_id, 1,
-        1 if result["win"] else 0,
-        result["payout"] if result["win"] else 0,
-        result["number"],
-    )
-
+    await crud.update_roulette_stats(db, user_id, 1, 1 if result["win"] else 0, result["payout"] if result["win"] else 0, result["number"])
     await notify_user(user_id, {
         "type": "roulette_result",
         "number": result["number"],
@@ -214,5 +223,4 @@ async def spin_roulette(user_id: int, bet_type: str, bet_amount: int, bet_value:
         "payout": result["payout"],
         "balance": user.balance + result["payout"] - bet_amount,
     })
-
     return result

@@ -1,15 +1,72 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta http-equiv="refresh" content="0; url=https://penthouse-dream-bot.onrender.com" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>Penthouse Dream</title>
-  <style>
-    body { background: #1a1a2e; color: #fff; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; font-family: sans-serif; }
-  </style>
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <p>Loading Penthouse Dream...</p>
+
+<div class="top-bar">
+  <h1>🏠 PENTHOUSE DREAM</h1>
+  <div class="top-info">
+    <span>💰 <span id="balanceDisplay">0</span></span>
+    <span>🏠 Ур. <span id="roomLevelDisplay">1</span></span>
+    <span>😊 <span id="happinessDisplay">50</span>%</span>
+  </div>
+</div>
+
+<div class="main">
+  <div class="sidebar">
+    <button class="active" data-view="room">🏠 Комната</button>
+    <button data-view="roulette">🎰 Рулетка</button>
+    <button data-view="inventory">🎒 Инвентарь</button>
+    <button data-view="shop">🏪 Магазин</button>
+    <hr style="border-color:#0f3460;margin:8px 0;">
+    <button id="refreshBtn">🔄 Обновить</button>
+  </div>
+
+  <div class="content">
+    <canvas id="roomCanvas" width="800" height="500"></canvas>
+
+    <div class="panel active" id="roomPanel">
+      <h3>🏠 Комната</h3>
+      <p style="font-size:13px;color:#aaa;">
+        Покупай предметы в Telegram-боте, и они появятся здесь.
+        Нажми на предмет в комнате чтобы экипировать.
+      </p>
+    </div>
+
+    <div class="panel" id="roulettePanel">
+      <div class="roulette-container">
+        <canvas id="rouletteCanvas" width="300" height="300"></canvas>
+        <div id="rouletteResult" style="margin-top:8px;font-size:16px;font-weight:bold;min-height:24px;"></div>
+        <div class="roulette-controls" id="rouletteControls"></div>
+      </div>
+    </div>
+
+    <div class="panel" id="inventoryPanel">
+      <h3>🎒 Инвентарь</h3>
+      <div class="inventory-grid" id="inventoryGrid"></div>
+    </div>
+
+    <div class="panel" id="shopPanel">
+      <h3>🏪 Магазин</h3>
+      <div id="shopItems"></div>
+    </div>
+  </div>
+</div>
+
+<div class="status-bar">
+  <span id="statusText">Готово</span>
+  <span id="connectionStatus">● Отключено</span>
+</div>
+
+<div id="notificationArea"></div>
+
+<script src="room.js"></script>
+<script src="roulette.js"></script>
+<script src="app.js"></script>
 </body>
 </html>

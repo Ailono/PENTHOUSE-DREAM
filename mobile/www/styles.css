@@ -1,0 +1,397 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, sans-serif;
+  background: #1a1a2e;
+  color: #e0e0e0;
+  overflow: hidden;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.top-bar {
+  background: #16213e;
+  padding: 8px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #0f3460;
+  -webkit-app-region: drag;
+  flex-shrink: 0;
+}
+
+.top-bar h1 {
+  font-size: 18px;
+  color: #e94560;
+  letter-spacing: 1px;
+}
+
+.top-info {
+  display: flex;
+  gap: 20px;
+  font-size: 14px;
+  -webkit-app-region: no-drag;
+}
+
+.top-info span {
+  padding: 4px 12px;
+  background: #0f3460;
+  border-radius: 12px;
+}
+
+.main {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.sidebar {
+  width: 220px;
+  background: #16213e;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-right: 1px solid #0f3460;
+}
+
+.sidebar button {
+  padding: 10px 14px;
+  background: #0f3460;
+  border: none;
+  color: #e0e0e0;
+  font-size: 13px;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.2s;
+}
+
+.sidebar button:hover {
+  background: #1a4a8a;
+}
+
+.sidebar button.active {
+  background: #e94560;
+  color: #fff;
+}
+
+.content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px;
+  position: relative;
+}
+
+canvas {
+  display: block;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  max-width: 100%;
+}
+
+#roomCanvas {
+  background: #2c2c3a;
+}
+
+.panel {
+  display: none;
+  width: 100%;
+  max-width: 800px;
+  margin-top: 10px;
+  padding: 12px;
+  background: #16213e;
+  border-radius: 8px;
+  border: 1px solid #0f3460;
+}
+
+.panel.active {
+  display: block;
+}
+
+.panel h3 {
+  color: #e94560;
+  margin-bottom: 10px;
+}
+
+.inventory-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.inv-slot {
+  width: 64px;
+  height: 64px;
+  background: #0f3460;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.inv-slot:hover {
+  border-color: #e94560;
+}
+
+.inv-slot.equipped {
+  border-color: #4ecca3;
+}
+
+.roulette-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+#rouletteCanvas {
+  border-radius: 50%;
+  background: #1a1a2e;
+}
+
+.roulette-controls {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.roulette-controls button {
+  padding: 8px 16px;
+  background: #0f3460;
+  border: none;
+  color: #e0e0e0;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: background 0.2s;
+}
+
+.roulette-controls button:hover {
+  background: #1a4a8a;
+}
+
+.roulette-controls button.bet {
+  background: #e94560;
+}
+
+.roulette-controls button.bet:hover {
+  background: #c73650;
+}
+
+.status-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #16213e;
+  padding: 6px 20px;
+  font-size: 12px;
+  color: #888;
+  border-top: 1px solid #0f3460;
+  display: flex;
+  justify-content: space-between;
+}
+
+.item-count {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: bold;
+}
+
+.badge.common { background: #4ecca3; color: #000; }
+.badge.uncommon { background: #3498db; color: #fff; }
+.badge.rare { background: #9b59b6; color: #fff; }
+.badge.legendary { background: #e67e22; color: #fff; }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.notification {
+  position: fixed;
+  top: 60px;
+  right: 20px;
+  background: #16213e;
+  border: 1px solid #e94560;
+  padding: 12px 20px;
+  border-radius: 8px;
+  animation: fadeIn 0.3s ease;
+  z-index: 100;
+}
+
+@media (max-width: 768px) {
+  body {
+    overflow: auto;
+    height: auto;
+    min-height: 100vh;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  * {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  .top-bar {
+    padding: 6px 12px;
+  }
+
+  .top-bar h1 {
+    font-size: 14px;
+  }
+
+  .top-info {
+    gap: 8px;
+    font-size: 12px;
+  }
+
+  .top-info span {
+    padding: 3px 8px;
+  }
+
+  .main {
+    flex-direction: column;
+    padding-bottom: 56px;
+    overflow: visible;
+  }
+
+  .sidebar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    flex-direction: row;
+    gap: 2px;
+    padding: 4px 6px;
+    border-right: none;
+    border-top: 1px solid #0f3460;
+    z-index: 50;
+    justify-content: space-around;
+  }
+
+  .sidebar button {
+    padding: 10px 4px;
+    font-size: 11px;
+    text-align: center;
+    flex: 1;
+    min-width: 0;
+    border-radius: 6px;
+  }
+
+  .sidebar button:hover {
+    background: #0f3460;
+  }
+
+  .sidebar hr {
+    display: none;
+  }
+
+  .content {
+    padding: 8px;
+    width: 100%;
+  }
+
+  #roomCanvas {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 8 / 5;
+    max-height: 50vh;
+  }
+
+  #rouletteCanvas {
+    width: min(100%, 300px);
+    height: auto;
+    aspect-ratio: 1;
+  }
+
+  .panel {
+    padding: 10px;
+    margin-top: 6px;
+  }
+
+  .roulette-controls {
+    gap: 6px;
+  }
+
+  .roulette-controls button {
+    padding: 12px 10px;
+    font-size: 13px;
+    flex: 1 1 30%;
+    min-width: 90px;
+  }
+
+  .inv-slot {
+    width: 56px;
+    height: 56px;
+    font-size: 24px;
+  }
+
+  .notification {
+    top: auto;
+    bottom: 70px;
+    right: 10px;
+    left: 10px;
+    font-size: 13px;
+    padding: 10px 16px;
+  }
+
+  .status-bar {
+    display: none;
+  }
+}
+
+@media (max-width: 400px) {
+  .top-bar h1 {
+    font-size: 12px;
+  }
+
+  .top-info {
+    font-size: 10px;
+    gap: 4px;
+  }
+
+  .top-info span {
+    padding: 2px 6px;
+  }
+
+  .sidebar button {
+    font-size: 10px;
+    padding: 6px 4px;
+  }
+
+  .roulette-controls button {
+    padding: 8px 8px;
+    font-size: 11px;
+    flex: 1 1 45%;
+    min-width: 60px;
+  }
+
+  .inv-slot {
+    width: 44px;
+    height: 44px;
+    font-size: 18px;
+  }
+}

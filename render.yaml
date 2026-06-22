@@ -1,0 +1,13 @@
+services:
+  - type: worker
+    name: penthouse-dream-bot
+    env: python
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: cd backend && python -m bot.main
+    envVars:
+      - key: BOT_TOKEN
+        value: 8976221169:AAG5zZ6tisXvLTn4N1WKujAHQmQfVkwX9P8
+      - key: DATABASE_URL
+        sync: false
+      - key: DB_TYPE
+        value: sqlite

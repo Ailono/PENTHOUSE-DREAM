@@ -1,0 +1,9 @@
+{
+  "appId": "com.penthouse.dream",
+  "appName": "Penthouse Dream",
+  "webDir": "www",
+  "server": {
+    "url": "https://penthouse-dream-bot.onrender.com",
+    "cleartext": false
+  }
+}
